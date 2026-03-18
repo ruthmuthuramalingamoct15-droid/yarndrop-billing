@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Yarndrop Premium Billing</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<style>
+:root { --brand-blue: #1e3c4f; --brand-orange: #c95f1d; }
+*{margin:0;box-sizing:border-box}
+body{ font-family:'Segoe UI', Tahoma, sans-serif; background:#f3f4f6; padding:40px; }
+
+.invoice{
+    width:210mm;
+    min-height:297mm;
+    background:#fff;
+    margin:auto;
+    padding:15mm;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+}
+
+/* HEADER AREA */
+.header-top {
+    text-align: center;
+    margin-bottom: 10px;
+}
+.brand-title { 
+    color: var(--brand-blue); 
+    font-size: 48px; 
+    font-weight: 900;
+    letter-spacing: 6px;
+    margin-bottom: 5px;
+}
+.needle-logo {
+    width: 380px; 
+    height: auto;
+    display: block;
+    margin: 0 auto 20px;
+}
+
+.contact-bar {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #333;
+    margin-bottom: 25px;
+    line-height: 1.5;
+}
+
+.invoice-banner {
+    text-align: center;
+    border-top: 2px solid #333;
+    border-bottom: 2px solid #333;
+    padding: 8px 0;
+    margin-bottom: 30px;
+}
+.invoice-banner h2 {
+    letter-spacing: 15px;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+/* DETAILS SECTION */
+.info-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 40px;
+    margin-bottom: 30px;
+}
+.section-label { 
+    font-size: 11px; 
+    font-weight: bold; 
+    color: var(--brand-blue); 
+    text-transform: uppercase; 
+    margin-bottom: 5px; 
+}
+textarea, input { border: 1px solid #ddd; border-radius: 4px; padding: 10px; width: 100%; font-family: inherit; }
+
+/* TABLE */
+table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+th { background: var(--brand-blue); color: #fff; text-align: left; padding: 14px; font-size: 14px; text-transform: uppercase; }
+td { padding: 12px; border-bottom: 1px solid #eee; font-size: 14px; color: #333; }
+
+/* FOOTER & TOTALS */
+.footer-container {
+    margin-top: auto; 
+    display: flex;
+    justify-content: space-between;
+    padding-top: 50px;
+    padding-bottom: 30px;
+}
+.total-box { 
+    width: 350px; 
+    background: #fcfcfc; 
+    padding: 20px; 
+    border-radius: 5px;
+    border: 1px solid #eee;
+}
+.total-row { display: flex; justify-content: space-between; align-items: center; margin: 10px 0; font-size: 15px; }
+.grand-total { 
+    border-top: 2px solid var(--brand-blue); 
+    margin-top: 15px; 
+    padding-top: 15px; 
+    font-weight: bold; 
+    font-size: 22px; 
+    color: var(--brand-orange); 
+}
+
+.approval-box {
+    text-align: right;
+    align-self: flex-end;
+}
+
+/* UTILITY */
+.no-print { width: 210mm; margin: 0 auto 20px; display: flex; gap: 10px; }
+button { padding: 12px 24px; cursor: pointer; border: none; border-radius: 6px; background: var(--brand-blue); color: white; font-weight: bold; transition: 0.3s; }
+button:hover { opacity: 0.9; }
+
+@media print { .no-print { display: none; } body { padding: 0; background: #fff; } .invoice { box-shadow: none; border: none; width: 100%; } }
+</style>
+</head>
+<body>
+
+<div class="no-print">
+    <button onclick="addItem()">+ Add Product</button>
+    <button onclick="downloadPDF()" style="background:#27ae60">Download PDF</button>
+    <button onclick="window.print()" style="background:#7f8c8d">Print</button>
+</div>
+
+<div class="invoice" id="invoice">
+    <div class="header-top">
+        <div class="brand-title">YARN DROP</div>
+        <img src="output.jpg" class="needle-logo" alt="Yarndrop Logo">
+    </div>
+
+    <div class="contact-bar">
+        <div style="max-width: 60%;">
+            No.1D, Market Street, Near Thirumaraiyur Bus Stop, Nazareth,<br>
+            Thoothukudi-628617
+        </div>
+        <div style="text-align: right;">
+            Ph: +91-9360131138<br>
+            <b>GST/UDYAM:</b> TN-09-0029093
+        </div>
+    </div>
+
+    <div class="invoice-banner">
+        <h2>INVOICE</h2>
+    </div>
+
+    <div class="info-grid">
+        <div>
+            <div class="section-label">Shipping Address</div>
+            <textarea id="cust_box" rows="3"></textarea>
+        </div>
+        <div style="text-align: right;">
+            <div class="section-label">Billing Details</div>
+            <div style="margin-bottom: 10px;">Inv No: <input type="text" id="inv_no" style="width: 150px; text-align: right;"></div>
+            <div>Date: <input type="text" id="inv_date" style="width: 150px; text-align: right;"></div>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 45%;">Product Description</th>
+                <th>Size</th>
+                <th>Count</th>
+                <th>Price</th>
+                <th style="text-align: right;">Amount</th>
+            </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+    </table>
+
+    <div class="footer-container">
+        <div class="total-box">
+            <div class="total-row"><span>Subtotal</span><span>₹ <span id="sub_val">0.00</span></span></div>
+            <div class="total-row">
+                <span>Shipping</span>
+                <input type="number" id="ship_input" value="0" oninput="calculate()" style="width:100px; text-align: right;">
+            </div>
+            <div class="total-row">
+                <span>Discount</span>
+                <input type="number" id="disc_input" value="0" oninput="calculate()" style="width:100px; text-align: right; color: #d9534f;">
+            </div>
+            <div class="total-row"><span>GST</span><span>₹ <span id="gst_val">0.00</span></span></div>
+            <div class="total-row grand-total"><span>Total Payable</span><span>₹ <span id="total_val">0.00</span></span></div>
+        </div>
+
+        <div class="approval-box">
+            <p style="font-size: 15px; margin-bottom: 70px;">Approved by,</p>
+            <p><strong>YARN DROP</strong></p>
+            <p>Jasmine Beulah R</p>
+        </div>
+    </div>
+</div>
+
+<script>
+let items = [];
+
+function addItem() {
+    const p = prompt("Product Name");
+    const s = prompt("Size", "S/M/L/XL/XXL/4XL/5XL");
+    const c = prompt("Count (e.g.12)", "12");
+    const pr = parseFloat(prompt("Price per unit", "175"));
+
+    if (p && !isNaN(pr)) {
+        let qty = parseFloat(c) || 1;
+        items.push({ p, s, c, pr, amt: qty * pr });
+        render();
+    }
+}
+
+function render() {
+    const tb = document.getElementById("tbody");
+    tb.innerHTML = "";
+    items.forEach((item) => {
+        tb.innerHTML += `<tr>
+            <td>${item.p}</td>
+            <td>${item.s || '-'}</td>
+            <td>${item.c}</td>
+            <td>${item.pr.toFixed(2)}</td>
+            <td style="text-align: right;">${item.amt.toFixed(2)}</td>
+        </tr>`;
+    });
+    calculate();
+}
+
+function calculate() {
+    const sub = items.reduce((a, b) => a + b.amt, 0);
+    const ship = parseFloat(document.getElementById("ship_input").value) || 0;
+    const disc = parseFloat(document.getElementById("disc_input").value) || 0;
+    
+    // Logic: (Subtotal + Shipping) - Discount
+    const taxableValue = (sub + ship) - disc;
+    
+    // 5% GST calculated on the result
+    const gst = taxableValue * 0.05;
+    const total = taxableValue + gst;
+
+    document.getElementById("sub_val").innerText = sub.toFixed(2);
+    document.getElementById("gst_val").innerText = gst.toFixed(2);
+    document.getElementById("total_val").innerText = total.toFixed(2);
+}
+
+function downloadPDF() {
+    const inv = document.getElementById("invoice");
+    html2canvas(inv, { scale: 3, useCORS: true }).then(canvas => {
+        const img = canvas.toDataURL("image/png");
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF("p", "mm", "a4");
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        pdf.addImage(img, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.save(`Yarndrop_Inv_${document.getElementById("inv_no").value}.pdf`);
+    });
+}
+
+// Fixed Defaults
+document.getElementById("inv_no").value = "034/25-26";
+document.getElementById("inv_date").value = "18/12/2025";
+</script>
+
+</body>
+</html>
